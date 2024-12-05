@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Le jeu de Noël</title>
+
+    <!-- PRELOAD -->
+    <link rel="preload" href="img/player/idle0-left.png" as="image">
+    <link rel="preload" href="img/player/idle0-right.png" as="image">
+    <link rel="preload" href="img/player/jump0-left.png" as="image">
+    <link rel="preload" href="img/player/jump0-right.png" as="image">
+    <link rel="preload" href="img/player/jump1-left.png" as="image">
+    <link rel="preload" href="img/player/jump1-right.png" as="image">
+    <link rel="preload" href="img/player/jump2-left.png" as="image">
+    <link rel="preload" href="img/player/jump2-right.png" as="image">
+    <link rel="preload" href="img/player/jump3-left.png" as="image">
+    <link rel="preload" href="img/player/jump3-right.png" as="image">
+    <link rel="preload" href="img/player/jump4-left.png" as="image">
+    <link rel="preload" href="img/player/jump4-right.png" as="image">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+
+    <!-- HOME PAGE -->
+    <div class="page" id="home" style="display: flex">
+        <h1>Le jeu de Noël</h1>
+        <input placeholder="Pseudo" type="text" id="home-pseudo">
+        <button id="play-button" onclick="startGame()">Jouer</button>
+    </div>
+
+    <!-- GAME PAGE -->
+    <div class="page" id="game" style="display: none">
+        <canvas></canvas>
+    </div>
+
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
