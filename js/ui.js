@@ -33,7 +33,7 @@ function endGame() {
     document.querySelector("#end-text").innerHTML = "Vous avez survécu à toutes les vagues";
   } else {
     phase--;
-    document.querySelector("#end-text").innerHTML = `Vous avez terminé : ${phase} ${phase < 2 ? "vague" : "vagues"}`;
+    document.querySelector("#end-text").innerHTML = `Vous avez terminé : ${phase} ${phase === 1 ? "vague" : "vagues"}`;
   }
 
   openPage("end");

@@ -17,13 +17,19 @@ CANVAS.height = 1080;
 // Animations
 const ANIMATIONS = {
     idle: {
-        size: 1,
-        loop: true,
+        size: 8,
+        stepWait: 8,
+        loop: true
+    },
+    walk: {
+        size: 11,
+        stepWait: 3,
+        loop: true
     },
     jump: {
         size: 5,
         stepWait: 3,
-        loop: false,
+        loop: false
     }
 }
 
@@ -46,9 +52,14 @@ const DEFAULT_FPS = 60;
 
 // Game
 const PHASES_DURATION = [
-    5000,
-    10000
+    2000,
+    20000
 ];
+
+// First phase
+const GIFTS_SPEED = 5;
+const GIFTS_NUMBER = 15;
+const GIFTS_Y_SPAWN_RANGE = 5000;
 
 // Players
 const PLAYER_SPEED = 10;
@@ -95,7 +106,6 @@ class Transform {
 // Represent a player
 class Player {
     transform;
-    type;
     direction = false;
     animation = "idle0-left";
     isGrounded = false;
@@ -105,11 +115,9 @@ class Player {
     /**
      * Constructor.
      * @param transform Transform of the player.
-     * @param type Type of the player.
      */
-    constructor(transform = new Transform(), type = 0) {
+    constructor(transform = new Transform()) {
         this.transform = transform;
-        this.type = type;
     }
 }
 
@@ -126,14 +134,20 @@ let lastTick = 0;
 let phase = 0;
 let phaseTransforms = [
     [],
-    [
-        new Transform(CANVAS.width / 2 - 50, -100, 100, 100,
-            [
-                new Transform(CANVAS.width / 2 - 50, CANVAS.height + 100)
-            ], [0.5])
-    ],
+    [],
     []
 ];
+
+// Add the falling gift of the first phase to the list
+for (let i = 0; i < GIFTS_NUMBER; i++) {
+    phaseTransforms[1].push(
+        new Transform(CANVAS.width / 2 - 50 + Math.random() * (CANVAS.width - 100) - (CANVAS.width - 100) / 2,
+        -Math.random() * GIFTS_Y_SPAWN_RANGE - 100, 100, 100,
+        [
+            new Transform(0, CANVAS.height + 100)
+        ], [GIFTS_SPEED]));
+    phaseTransforms[1][i].targets[0].x = phaseTransforms[1][i].x;
+}
 
 let startTime = Date.now();
 
@@ -171,6 +185,10 @@ let animationNextStep = 0;
 
 //region Functions
 function setAnimation(name) {
+    if (name === animationName || !player.isGrounded && name !== "jump") {
+        return;
+    }
+
     animationName = name;
     animationStep = 0;
     animationEnded = false;
@@ -236,7 +254,7 @@ setInterval(() => {
             player.transform.y += groundDistance;
             player.yVelocity = 0;
             player.isGrounded = true;
-            setAnimation("idle");
+            setAnimation(inputLeft ||inputRight ? "walk" : "idle");
         } else if (player.yVelocity < 0 && ceilDistance < -player.yVelocity * deltaTime) {
             player.transform.y -= ceilDistance;
             player.yVelocity = 0;
@@ -273,6 +291,7 @@ setInterval(() => {
     if (inputLeft && !inputRight) {
         if (leftDistance !== null && leftDistance < PLAYER_SPEED * deltaTime) {
             player.transform.x -= leftDistance;
+            setAnimation("idle");
         } else {
             player.transform.x -= PLAYER_SPEED * deltaTime;
         }
@@ -281,6 +300,7 @@ setInterval(() => {
     } else if (inputRight && !inputLeft) {
         if (rightDistance !== null && rightDistance < PLAYER_SPEED * deltaTime) {
             player.transform.x += rightDistance;
+            setAnimation("idle");
         } else {
             player.transform.x += PLAYER_SPEED * deltaTime;
         }
@@ -328,6 +348,7 @@ setInterval(() => {
     //#endregion
 
     //region Animations
+
     if (!animationEnded) {
         animationNextStep += deltaTime;
         if (animationNextStep >= ANIMATIONS[animationName].stepWait) {
@@ -342,6 +363,7 @@ setInterval(() => {
             }
         }
     }
+
     //endregion
 
     //region Display
@@ -385,11 +407,13 @@ document.addEventListener("keydown", (e) => {
     // Left
     if (e.key === "a" || e.key === "A" || e.key === "ArrowLeft") {
         inputLeft = true;
+        setAnimation("walk");
     }
 
     // Right
     if (e.key === "d"|| e.key === "D" || e.key === "ArrowRight") {
         inputRight = true;
+        setAnimation("walk");
     }
 
     // Jump
@@ -403,11 +427,17 @@ document.addEventListener("keyup", (e) => {
     // Left
     if (e.key === "a" || e.key === "A" || e.key === "ArrowLeft") {
         inputLeft = false;
+        if  (!inputRight) {
+            setAnimation("idle");
+        }
     }
 
     // Right
     if (e.key === "d"|| e.key === "D" || e.key === "ArrowRight") {
         inputRight = false;
+        if (!inputLeft) {
+            setAnimation("idle");
+        }
     }
 
     // Jump
