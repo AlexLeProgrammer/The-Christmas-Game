@@ -5,7 +5,6 @@
  */
 
 let openedPage = "home";
-let pseudo = "";
 
 /**
  * Open a page by its id and closes all others
@@ -20,10 +19,24 @@ function openPage(id) {
   openedPage = id;
 }
 
+/**
+ * Start the game.
+ */
 function startGame() {
-  pseudo = document.querySelector("#home-pseudo").innerHTML;
-  console.log(pseudo + " started to play");
+  startTime = Date.now();
   openPage("game");
+}
+
+function endGame() {
+  if (phase === PHASES_DURATION.length) {
+    document.querySelector("#end-title").innerHTML = "Vous avez gagné !";
+    document.querySelector("#end-text").innerHTML = "Vous avez survécu à toutes les vagues";
+  } else {
+    phase--;
+    document.querySelector("#end-text").innerHTML = `Vous avez terminé : ${phase} ${phase < 2 ? "vague" : "vagues"}`;
+  }
+
+  openPage("end");
 }
 
 startGame();

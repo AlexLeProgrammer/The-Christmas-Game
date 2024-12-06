@@ -1,8 +1,8 @@
-#home h1 {
+#home h1, #end h1 {
     margin-bottom: 100px;
 }
 
-#home *:not(h1) {
+#home *:not(h1), #end *:not(h1) {
     width: 400px;
     padding: 10px;
     margin: 10px 0;
@@ -12,7 +12,7 @@
     background-color: transparent;
 }
 
-#home button {
+#home button, #end button {
     font-weight: bold;
     font-size: 1rem;
 }

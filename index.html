@@ -20,7 +20,7 @@
 
     <!-- CSS -->
     <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/home-end.css">
     <link rel="stylesheet" href="css/game.css">
 </head>
 <body>
@@ -28,13 +28,19 @@
     <!-- HOME PAGE -->
     <div class="page" id="home" style="display: flex">
         <h1>Le jeu de Noël</h1>
-        <input placeholder="Pseudo" type="text" id="home-pseudo">
-        <button id="play-button" onclick="startGame()">Jouer</button>
+        <button onclick="startGame()">Jouer</button>
     </div>
 
     <!-- GAME PAGE -->
     <div class="page" id="game" style="display: none">
         <canvas></canvas>
+    </div>
+
+    <!-- END PAGE -->
+    <div class="page" id="end" style="display: none">
+        <h1 id="end-title">Game Over</h1>
+        <p id="end-text">Vous avez terminé : 0 vague</p>
+        <button onclick="location.replace('./')">Rejouer</button>
     </div>
 
     <script src="js/ui.js"></script>

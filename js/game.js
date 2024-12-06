@@ -22,10 +22,10 @@ const ANIMATIONS = {
     },
     jump: {
         size: 5,
+        stepWait: 3,
         loop: false,
     }
 }
-const ANIMATION_STEP_WAIT = 3;
 
 // Sprites
 const PLAYER_SPRITES = {};
@@ -43,6 +43,12 @@ const PLAYER_SPRITE_HEIGHT = 135;
 
 // Delta-time
 const DEFAULT_FPS = 60;
+
+// Game
+const PHASES_DURATION = [
+    5000,
+    10000
+];
 
 // Players
 const PLAYER_SPEED = 10;
@@ -62,6 +68,9 @@ class Transform {
     y;
     width;
     height;
+    targets;
+    targetIndex = 0;
+    targetsSpeeds;
 
     /**
      * Constructor.
@@ -69,12 +78,17 @@ class Transform {
      * @param y Position of the transform in the Y axis.
      * @param width Width of the transform.
      * @param height Height of the transform.
+     * @param targets Destinations (Transform) of the transform.
+     * @param targetsSpeed Speeds of all the movements of the transform.
      */
-    constructor(x = 0, y = 0, width = 0, height = 0) {
+    constructor(x = 0, y = 0, width = 0, height = 0,
+                targets = [], targetsSpeed = []) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+        this.targets = targets;
+        this.targetsSpeeds = targetsSpeed;
     }
 }
 
@@ -108,7 +122,22 @@ class Player {
 let deltaTime = 0;
 let lastTick = 0;
 
-// Players
+// Game
+let phase = 0;
+let phaseTransforms = [
+    [],
+    [
+        new Transform(CANVAS.width / 2 - 50, -100, 100, 100,
+            [
+                new Transform(CANVAS.width / 2 - 50, CANVAS.height + 100)
+            ], [0.5])
+    ],
+    []
+];
+
+let startTime = Date.now();
+
+// Player
 let player = new Player(new Transform(CANVAS.width / 2, CANVAS.height / 2, 97.5, 135));
 
 // Inputs
@@ -261,10 +290,47 @@ setInterval(() => {
 
     //#endregion
 
+    //#region Phases
+
+    // Control transforms of the actual phase
+    for (let transform of phaseTransforms[phase]) {
+        if (transform.targets.length > transform.targetIndex) {
+            if (transform.x !== transform.targets[transform.targetIndex].x ||
+                transform.y !== transform.targets[transform.targetIndex].y) {
+                // Move the transform to his target
+                transform.x += Math.sign(transform.targets[transform.targetIndex].x - transform.x) *
+                    transform.targetsSpeeds[transform.targetIndex] * deltaTime;
+                transform.y += Math.sign(transform.targets[transform.targetIndex].y - transform.y) *
+                    transform.targetsSpeeds[transform.targetIndex] * deltaTime;
+            } else {
+                // If the target is reached pass to the next one
+                transform.targetIndex++;
+            }
+
+            // Check if the player hit the transform and end the game
+            if (player.transform.x + player.transform.width > transform.x &&
+                player.transform.x < transform.x + transform.width &&
+                player.transform.y + player.transform.height > transform.y &&
+                player.transform.y < transform.y + transform.height) {
+                endGame();
+            }
+        }
+    }
+
+    // Go to the next phase if the actual one is done
+    if (phase < PHASES_DURATION.length && Date.now() - startTime >= PHASES_DURATION[phase]) {
+        startTime = Date.now();
+        phase++;
+    } else if (phase === PHASES_DURATION.length) {
+        endGame();
+    }
+
+    //#endregion
+
     //region Animations
     if (!animationEnded) {
         animationNextStep += deltaTime;
-        if (animationNextStep >= ANIMATION_STEP_WAIT) {
+        if (animationNextStep >= ANIMATIONS[animationName].stepWait) {
             animationStep++;
             animationNextStep = 0;
             if (animationStep >= ANIMATIONS[animationName].size) {
@@ -283,7 +349,7 @@ setInterval(() => {
     // Clear the canvas
     CTX.clearRect(0, 0, CANVAS.width, CANVAS.height);
 
-    // create my anim
+    // Create my anim
     player.animation = `${animationName}${animationStep}-${player.direction ? "right" : "left"}`;
 
     // Draw the player
@@ -292,7 +358,7 @@ setInterval(() => {
         player.transform.y, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT);
 
     // Draw the platforms
-    for (let platform of platforms){
+    for (let platform of platforms) {
         CTX.fillStyle = "darkgreen";
         CTX.fillRect(platform.x, platform.y, platform.width, platform.height);
         CTX.strokeStyle = "black";
@@ -300,8 +366,16 @@ setInterval(() => {
         CTX.strokeRect(platform.x, platform.y, platform.width, platform.height);
     }
 
-    //#endregion
+    // Draw the transforms of the actual phase
+    for (let transform of phaseTransforms[phase]) {
+        CTX.fillStyle = "darkred";
+        CTX.fillRect(transform.x, transform.y, transform.width, transform.height);
+        CTX.strokeStyle = "black";
+        CTX.lineWidth = 7;
+        CTX.strokeRect(transform.x, transform.y, transform.width, transform.height);
+    }
 
+    //#endregion
 });
 
 //#region Inputs
