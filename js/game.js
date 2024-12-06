@@ -47,19 +47,33 @@ for (let name of Object.keys(ANIMATIONS)) {
 const PLAYER_SPRITE_WIDTH = 127.5;
 const PLAYER_SPRITE_HEIGHT = 135;
 
+const SLED_SPRITE_RIGHT = new Image();
+SLED_SPRITE_RIGHT.src = "./img/sled-right.png";
+const SLED_SPRITE_LEFT = new Image();
+SLED_SPRITE_LEFT.src = "./img/sled-left.png";
+const SLED_WIDTH = 686;
+const SLED_HEIGHT = 295;
+
 // Delta-time
 const DEFAULT_FPS = 60;
 
 // Game
 const PHASES_DURATION = [
     2000,
-    20000
+    20000,
+    10000
 ];
 
-// First phase
-const GIFTS_SPEED = 5;
+// First phase (Falling gifts)
+const GIFTS_SPEED = 10;
 const GIFTS_NUMBER = 15;
-const GIFTS_Y_SPAWN_RANGE = 5000;
+const GIFTS_Y_SPAWN_RANGE = 10000;
+
+// Second phase (Sled)
+const SLED_SPEED = 20;
+const SLED_SPEED_RETURN = 40;
+const SLED_X_SPAWN_RANGE = 1000;
+const SLED_X_GAP_DESTINATION = 5000;
 
 // Players
 const PLAYER_SPEED = 10;
@@ -135,7 +149,13 @@ let phase = 0;
 let phaseTransforms = [
     [],
     [],
-    []
+    [
+        new Transform(-Math.random() * SLED_X_SPAWN_RANGE - SLED_WIDTH, CANVAS.height / 2 - SLED_HEIGHT / 2,
+            SLED_WIDTH, SLED_HEIGHT, [
+                new Transform(CANVAS.width + SLED_X_GAP_DESTINATION, CANVAS.height / 2 - SLED_HEIGHT / 2),
+                new Transform(-SLED_WIDTH, CANVAS.height / 2 - SLED_HEIGHT / 2)
+            ], [SLED_SPEED, SLED_SPEED_RETURN])
+    ]
 ];
 
 // Add the falling gift of the first phase to the list
@@ -315,8 +335,10 @@ setInterval(() => {
     // Control transforms of the actual phase
     for (let transform of phaseTransforms[phase]) {
         if (transform.targets.length > transform.targetIndex) {
-            if (transform.x !== transform.targets[transform.targetIndex].x ||
-                transform.y !== transform.targets[transform.targetIndex].y) {
+            if (Math.abs(transform.targets[transform.targetIndex].x - transform.x) >
+                transform.targetsSpeeds[transform.targetIndex] * deltaTime ||
+                Math.abs(transform.targets[transform.targetIndex].y - transform.y) >
+                transform.targetsSpeeds[transform.targetIndex] * deltaTime) {
                 // Move the transform to his target
                 transform.x += Math.sign(transform.targets[transform.targetIndex].x - transform.x) *
                     transform.targetsSpeeds[transform.targetIndex] * deltaTime;
@@ -326,14 +348,14 @@ setInterval(() => {
                 // If the target is reached pass to the next one
                 transform.targetIndex++;
             }
+        }
 
-            // Check if the player hit the transform and end the game
-            if (player.transform.x + player.transform.width > transform.x &&
-                player.transform.x < transform.x + transform.width &&
-                player.transform.y + player.transform.height > transform.y &&
-                player.transform.y < transform.y + transform.height) {
-                endGame();
-            }
+        // Check if the player hit the transform and end the game
+        if (player.transform.x + player.transform.width > transform.x &&
+            player.transform.x < transform.x + transform.width &&
+            player.transform.y + player.transform.height > transform.y &&
+            player.transform.y < transform.y + transform.height) {
+            endGame();
         }
     }
 
@@ -341,8 +363,11 @@ setInterval(() => {
     if (phase < PHASES_DURATION.length && Date.now() - startTime >= PHASES_DURATION[phase]) {
         startTime = Date.now();
         phase++;
-    } else if (phase === PHASES_DURATION.length) {
+    }
+
+    if (phase === PHASES_DURATION.length) {
         endGame();
+        return;
     }
 
     //#endregion
@@ -390,11 +415,18 @@ setInterval(() => {
 
     // Draw the transforms of the actual phase
     for (let transform of phaseTransforms[phase]) {
-        CTX.fillStyle = "darkred";
-        CTX.fillRect(transform.x, transform.y, transform.width, transform.height);
-        CTX.strokeStyle = "black";
-        CTX.lineWidth = 7;
-        CTX.strokeRect(transform.x, transform.y, transform.width, transform.height);
+        switch (phase) {
+            case 1:
+                CTX.fillStyle = "darkred";
+                CTX.fillRect(transform.x, transform.y, transform.width, transform.height);
+                CTX.strokeStyle = "black";
+                CTX.lineWidth = 7;
+                CTX.strokeRect(transform.x, transform.y, transform.width, transform.height);
+                break;
+            case 2:
+                CTX.drawImage(transform.targetIndex === 0 ? SLED_SPRITE_RIGHT : SLED_SPRITE_LEFT, transform.x, transform.y, SLED_WIDTH, SLED_HEIGHT);
+                break;
+        }
     }
 
     //#endregion
