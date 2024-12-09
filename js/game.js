@@ -1,6 +1,6 @@
 /**
  * Game code
- * @author AlexEtienne
+ * @author AlexEtienne, ArseneBrosy
  * @since 2024-12-05
  */
 
@@ -30,8 +30,15 @@ const ANIMATIONS = {
         size: 5,
         stepWait: 3,
         loop: false
+    },
+    doublejump: {
+        size: 8,
+        stepWait: 3,
+        loop: false
     }
 }
+
+const GIFT_ANIMATION_STEP = 6;
 
 // Sprites
 const PLAYER_SPRITES = {};
@@ -44,6 +51,14 @@ for (let name of Object.keys(ANIMATIONS)) {
         }
     }
 }
+
+const GIFT_SPRITES = [];
+for (let i = 0; i < 4; i++) {
+    GIFT_SPRITES[i] = new Image();
+    GIFT_SPRITES[i].src = `./img/gift/gift${i}.png`;
+}
+
+const GIFT_SPRITE_RATIO = 22 / 14;
 
 const PLAYER_SPRITE_WIDTH = 127.5;
 const PLAYER_SPRITE_HEIGHT = 135;
@@ -85,7 +100,7 @@ const DARK_PLAYER_NODAMAGE_TIME = 200;
 // Players
 const PLAYER_SPEED = 10;
 const PLAYER_JUMP_FORCE = 30;
-const DEFAULT_MAX_JUMPS = 2;
+const DEFAULT_MAX_DOUBLE_JUMPS = 1;
 
 // Physics
 const GRAVITY_FORCE = 2;
@@ -132,7 +147,7 @@ class Player {
     animation = "idle0-left";
     isGrounded = false;
     yVelocity = 0;
-    jumpRemaining = DEFAULT_MAX_JUMPS;
+    jumpRemaining = DEFAULT_MAX_DOUBLE_JUMPS;
 
     /**
      * Constructor.
@@ -218,11 +233,14 @@ let animationStep = 0;
 let animationEnded = false;
 let animationNextStep = 0;
 
+let giftAnimationStep = 0;
+let giftAnimationNextStep = 0;
+
 //#endregion
 
 //region Functions
 function setAnimation(name) {
-    if (name === animationName || !player.isGrounded && name !== "jump") {
+    if ((name === animationName && ANIMATIONS[name].loop) || (!player.isGrounded && !["jump", "doublejump"].includes(name))) {
         return;
     }
 
@@ -245,7 +263,7 @@ setInterval(() => {
 
     //#region Gravity
 
-    // Apply the gravity to the player if he isn"t grounded
+    // Apply the gravity to the player if he isn't grounded
     let groundDistance = CANVAS.height - player.transform.y - player.transform.height;
     let ceilDistance = CANVAS.height;
     let leftDistance = null;
@@ -300,15 +318,17 @@ setInterval(() => {
 
     // Reload jumps remaining
     if (player.isGrounded) {
-        player.jumpRemaining = DEFAULT_MAX_JUMPS;
+        player.jumpRemaining = DEFAULT_MAX_DOUBLE_JUMPS;
     }
 
     // Jump
     if (inputJump && player.jumpRemaining > 0) {
         inputJump = false;
-        player.jumpRemaining--;
+        if (!player.isGrounded) {
+            player.jumpRemaining--;
+        }
 
-        setAnimation("jump");
+        setAnimation(player.isGrounded ? "jump" : "doublejump");
 
         player.yVelocity = -PLAYER_JUMP_FORCE;
 
@@ -410,6 +430,15 @@ setInterval(() => {
         }
     }
 
+    giftAnimationNextStep += deltaTime;
+    if (giftAnimationNextStep >= GIFT_ANIMATION_STEP) {
+        giftAnimationStep++;
+        giftAnimationNextStep = 0;
+        if (giftAnimationStep >= 4) {
+            giftAnimationStep = 0;
+        }
+    }
+
     //endregion
 
     //region Display
@@ -466,11 +495,9 @@ setInterval(() => {
     for (let transform of phaseTransforms[phase]) {
         switch (phase) {
             case 1:
-                CTX.fillStyle = "darkred";
-                CTX.fillRect(transform.x, transform.y, transform.width, transform.height);
-                CTX.strokeStyle = "black";
-                CTX.lineWidth = 7;
-                CTX.strokeRect(transform.x, transform.y, transform.width, transform.height);
+                CTX.drawImage(GIFT_SPRITES[(giftAnimationStep + parseInt(transform.x)) % 4],
+                  transform.x, transform.y - transform.height * (GIFT_SPRITE_RATIO - 1),
+                  transform.width, transform.height * GIFT_SPRITE_RATIO);
                 break;
             case 2:
                 CTX.drawImage(transform.targetIndex === 0 ? SLED_SPRITE_RIGHT : SLED_SPRITE_LEFT, transform.x, transform.y, SLED_WIDTH, SLED_HEIGHT);
