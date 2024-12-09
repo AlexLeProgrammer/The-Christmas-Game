@@ -44,6 +44,7 @@ for (let name of Object.keys(ANIMATIONS)) {
         }
     }
 }
+
 const PLAYER_SPRITE_WIDTH = 127.5;
 const PLAYER_SPRITE_HEIGHT = 135;
 
@@ -61,7 +62,8 @@ const DEFAULT_FPS = 60;
 const PHASES_DURATION = [
     2000,
     20000,
-    10000
+    10000,
+    20000
 ];
 
 // First phase (Falling gifts)
@@ -74,6 +76,11 @@ const SLED_SPEED = 20;
 const SLED_SPEED_RETURN = 40;
 const SLED_X_SPAWN_RANGE = 1000;
 const SLED_X_GAP_DESTINATION = 5000;
+
+// Third phase (Dark player)
+const DARK_PLAYER_DELAY = 150;
+const DARK_PLAYER_SPAWN_DELAY = 1000;
+const DARK_PLAYER_NODAMAGE_TIME = 200;
 
 // Players
 const PLAYER_SPEED = 10;
@@ -119,6 +126,7 @@ class Transform {
 
 // Represent a player
 class Player {
+    mainPlayer;
     transform;
     direction = false;
     animation = "idle0-left";
@@ -128,9 +136,11 @@ class Player {
 
     /**
      * Constructor.
+     * @param mainPlayer Define if the player is the main player or not.
      * @param transform Transform of the player.
      */
-    constructor(transform = new Transform()) {
+    constructor(mainPlayer = false, transform = new Transform()) {
+        this.mainPlayer = mainPlayer;
         this.transform = transform;
     }
 }
@@ -155,7 +165,8 @@ let phaseTransforms = [
                 new Transform(CANVAS.width + SLED_X_GAP_DESTINATION, CANVAS.height / 2 - SLED_HEIGHT / 2),
                 new Transform(-SLED_WIDTH, CANVAS.height / 2 - SLED_HEIGHT / 2)
             ], [SLED_SPEED, SLED_SPEED_RETURN])
-    ]
+    ],
+    []
 ];
 
 // Add the falling gift of the first phase to the list
@@ -171,8 +182,14 @@ for (let i = 0; i < GIFTS_NUMBER; i++) {
 
 let startTime = Date.now();
 
-// Player
-let player = new Player(new Transform(CANVAS.width / 2, CANVAS.height / 2, 97.5, 135));
+// Players
+let player = new Player(true, new Transform(CANVAS.width / 2, CANVAS.height / 2, 97.5, 135));
+
+// Third phase (Dark player want to touch you)
+let darkPlayer = new Player(false, new Transform(CANVAS.width / 2 - PLAYER_SPRITE_WIDTH / 2, 200, 97.5, 135));
+let darkPlayerPosition = [];
+let darkPlayerIndex = 0;
+let darkPlayerSpawnCount = 0;
 
 // Inputs
 let inputLeft = false;
@@ -333,6 +350,10 @@ setInterval(() => {
     //#region Phases
 
     // Control transforms of the actual phase
+    if (phase === 3 && darkPlayerPosition.length - DARK_PLAYER_NODAMAGE_TIME >= DARK_PLAYER_DELAY) {
+        phaseTransforms[phase] = [darkPlayer.transform];
+    }
+
     for (let transform of phaseTransforms[phase]) {
         if (transform.targets.length > transform.targetIndex) {
             if (Math.abs(transform.targets[transform.targetIndex].x - transform.x) >
@@ -399,10 +420,38 @@ setInterval(() => {
     // Create my anim
     player.animation = `${animationName}${animationStep}-${player.direction ? "right" : "left"}`;
 
-    // Draw the player
-    CTX.drawImage(PLAYER_SPRITES[player.animation],
-        player.transform.x - (PLAYER_SPRITE_WIDTH - player.transform.width) / 2,
-        player.transform.y, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT);
+    // Control the dark player
+    if (phase === 3) {
+        if (darkPlayerSpawnCount >= DARK_PLAYER_SPAWN_DELAY - DARK_PLAYER_DELAY) {
+            darkPlayerPosition.push(JSON.parse(JSON.stringify(player)));
+        }
+
+        if (darkPlayerPosition.length >= DARK_PLAYER_DELAY) {
+            darkPlayer = darkPlayerPosition[darkPlayerIndex];
+            darkPlayer.mainPlayer = false;
+            darkPlayerIndex++;
+        }
+
+        darkPlayerSpawnCount++;
+    }
+
+    // Draw the players
+    let players = [player];
+    if (phase === 3) {
+        players.push(darkPlayer);
+    }
+
+    for (let player of players) {
+        if (phase === 3 && !player.mainPlayer) {
+            CTX.globalAlpha = darkPlayerSpawnCount / DARK_PLAYER_SPAWN_DELAY;
+        }
+
+        CTX.drawImage(PLAYER_SPRITES[player.animation],
+            player.transform.x - (PLAYER_SPRITE_WIDTH - player.transform.width) / 2,
+            player.transform.y, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT);
+
+        CTX.globalAlpha = 1;
+    }
 
     // Draw the platforms
     for (let platform of platforms) {
