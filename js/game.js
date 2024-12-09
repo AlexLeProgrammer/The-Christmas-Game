@@ -38,6 +38,8 @@ const ANIMATIONS = {
     }
 }
 
+const GIFT_ANIMATION_STEP = 6;
+
 // Sprites
 const PLAYER_SPRITES = {};
 for (let name of Object.keys(ANIMATIONS)) {
@@ -49,6 +51,14 @@ for (let name of Object.keys(ANIMATIONS)) {
         }
     }
 }
+
+const GIFT_SPRITES = [];
+for (let i = 0; i < 4; i++) {
+    GIFT_SPRITES[i] = new Image();
+    GIFT_SPRITES[i].src = `./img/gift/gift${i}.png`;
+}
+
+const GIFT_SPRITE_RATIO = 22 / 14;
 
 const PLAYER_SPRITE_WIDTH = 127.5;
 const PLAYER_SPRITE_HEIGHT = 135;
@@ -222,6 +232,9 @@ let animationName = "idle";
 let animationStep = 0;
 let animationEnded = false;
 let animationNextStep = 0;
+
+let giftAnimationStep = 0;
+let giftAnimationNextStep = 0;
 
 //#endregion
 
@@ -417,6 +430,15 @@ setInterval(() => {
         }
     }
 
+    giftAnimationNextStep += deltaTime;
+    if (giftAnimationNextStep >= GIFT_ANIMATION_STEP) {
+        giftAnimationStep++;
+        giftAnimationNextStep = 0;
+        if (giftAnimationStep >= 4) {
+            giftAnimationStep = 0;
+        }
+    }
+
     //endregion
 
     //region Display
@@ -473,11 +495,9 @@ setInterval(() => {
     for (let transform of phaseTransforms[phase]) {
         switch (phase) {
             case 1:
-                CTX.fillStyle = "darkred";
-                CTX.fillRect(transform.x, transform.y, transform.width, transform.height);
-                CTX.strokeStyle = "black";
-                CTX.lineWidth = 7;
-                CTX.strokeRect(transform.x, transform.y, transform.width, transform.height);
+                CTX.drawImage(GIFT_SPRITES[(giftAnimationStep + parseInt(transform.x)) % 4],
+                  transform.x, transform.y - transform.height * (GIFT_SPRITE_RATIO - 1),
+                  transform.width, transform.height * GIFT_SPRITE_RATIO);
                 break;
             case 2:
                 CTX.drawImage(transform.targetIndex === 0 ? SLED_SPRITE_RIGHT : SLED_SPRITE_LEFT, transform.x, transform.y, SLED_WIDTH, SLED_HEIGHT);
